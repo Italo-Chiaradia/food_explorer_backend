@@ -1,15 +1,22 @@
+require("express-async-errors");
+const migrationsRun = require("./database/sqlite/migrations");
+const uploadConfig = require("./configs/uploads");
+const cookieParser = require("cookie-parser");
 const AppError = require("./utils/AppError");
 const express = require("express");
 const routes = require("./routes");
-require("express-async-errors");
 const cors = require("cors");
-
 const app = express();
 
 const PORT = 3333;
-
+app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER));
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  credentials: true
+}));
+migrationsRun();
 app.use(routes);
 app.use((error, request, response, next) => {
   if (error instanceof AppError) {

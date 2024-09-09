@@ -3,18 +3,17 @@ const AppError = require("../utils/AppError");
 
 class DishesController {
   async create(request, response) {
-    const {img, title, description, price, category, ingredients} = request.body;
+    const {title, description, price, category, ingredients} = request.body;
     const {id} = request.user;
     
     const [dish_id] = await knex("dishes").insert({
       user_id:id,
-      img,
       title,
       description,
       price,
       category
     });
-
+   
     const ingredientsInsert = ingredients.map(name => {
       return {
         dish_id,
@@ -24,39 +23,38 @@ class DishesController {
 
     await knex("ingredients").insert(ingredientsInsert);
 
-    response.json();
+    response.json({dish_id});
   }
 
   async update(request, response) {
-    const {img, title, description, price, category, ingredients} = request.body;
+    const {title, description, price, category, ingredients} = request.body;
     const {id} = request.params;
-
+    
     const dish = await knex("dishes").where({id}).first();
 
     if (!dish) {
       throw new AppError("Esse prato não existe!");
     }
 
-    await knex("ingredients").where({dish_id:id}).delete();
+    if (ingredients) {
+      await knex("ingredients").where({dish_id:id}).delete();
+      const ingredientsInsert = ingredients.map(name => {
+        return {
+          dish_id: id,
+          name
+        }
+      });
+  
+      if (ingredientsInsert.length > 0)
+        await knex("ingredients").insert(ingredientsInsert);
+    }
 
-    const ingredientsInsert = ingredients.map(name => {
-      return {
-        dish_id: id,
-        name
-      }
-    });
-
-    if (ingredientsInsert.length > 0)
-      await knex("ingredients").insert(ingredientsInsert);
-
-    dish.img = img ?? dish.img;
     dish.title = title ?? dish.title;
     dish.description = description ?? dish.description;
     dish.price = price ?? dish.price;
     dish.category = category ?? dish.category;
 
     await knex("dishes").where({id}).update({
-      img: dish.img,
       title: dish.title,
       description: dish.description,
       price: dish.price,
@@ -77,32 +75,21 @@ class DishesController {
 
   async index(request, response) {
     const {title, ingredients} = request.query;
-    const user_id = request.user.id;
 
-    let dishes;
+    let dishes = [];
 
-    if (ingredients) {
-      const filterIngredients = ingredients.split(", ").map(ingredient => ingredient.trim());
-      dishes = await knex("ingredients")
-        .select([
-          "dishes.id",
-          "dishes.title",
-          "dishes.user_id"
-        ])
-        .where("dishes.user_id", user_id)
-        .whereLike("dishes.title", `%${title}%`)
-        .whereIn("name", filterIngredients)
-        .innerJoin("dishes", "dishes.id", "ingredients.dish_id")
+    if (title || ingredients) {
+      dishes = await knex("dishes")
+        .select("dishes.*")
+        .innerJoin("ingredients", "dishes.id", "ingredients.dish_id")
+        .where(function() {
+          this.whereLike("dishes.title", `%${title}%`)
+            .orWhereLike("ingredients.name", `%${ingredients}%`);
+        })
+        .groupBy("dishes.id")
         .orderBy("dishes.title");
     } else {
       dishes = await knex("dishes")
-        .select([
-          "dishes.id",
-          "dishes.title",
-          "dishes.user_id"
-        ])
-        .where({user_id})
-        .whereLike("title", `%${title}%`)
         .orderBy("title");
     }
 
