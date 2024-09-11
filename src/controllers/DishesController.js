@@ -62,7 +62,7 @@ class DishesController {
       updated_at: knex.fn.now()
     })
 
-    return response.json();
+    return response.json({dish_id: id});
   }
 
   async delete(request, response) {
