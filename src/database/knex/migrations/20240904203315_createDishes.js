@@ -6,7 +6,7 @@ exports.up = knex => knex.schema.createTable("dishes", table => {
   table.text("title").notNullable();
   table.text("description").notNullable();
   table.decimal('price', 10, 2).notNullable();
-  table.enum("category", ["refeição", "prato principal", "bebida"], {useNative: true, enumName: "categories"})
+  table.enum("category", ["refeição", "sobremesa", "bebida"], {useNative: true, enumName: "categories"})
     .notNullable()
     .default("refeição");
   table.timestamp("created_at").default(knex.fn.now());

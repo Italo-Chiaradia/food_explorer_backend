@@ -10,7 +10,7 @@ class DishesImgController {
     const diskStorage = new DiskStorage();
 
     const dish = await knex("dishes").where({id}).first();
-
+    
     if (!dish) {
       throw new AppError("Esse prato não existe!");
     }
