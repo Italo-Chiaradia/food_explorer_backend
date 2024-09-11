@@ -1,4 +1,5 @@
 require("express-async-errors");
+require("dotenv/config");
 const migrationsRun = require("./database/sqlite/migrations");
 const uploadConfig = require("./configs/uploads");
 const cookieParser = require("cookie-parser");
@@ -8,7 +9,7 @@ const routes = require("./routes");
 const cors = require("cors");
 const app = express();
 
-const PORT = 3333;
+const PORT = process.env.PORT || 3333;
 app.use("/files", express.static(uploadConfig.UPLOADS_FOLDER));
 app.use(express.json());
 app.use(cookieParser());
